@@ -1,6 +1,6 @@
-# [Project name]
+# kashGo
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+kashGo is a customer wallet experience based on the supplied KolaKash mobile screens, with the brand renamed to kashGo and new accounts starting empty.
 
 ## Run & Operate
 
@@ -22,23 +22,29 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/kashgo/src/App.tsx` — the customer app shell, reference-aligned screens, routes, and local account interactions
+- `artifacts/kashgo/src/index.css` — kashGo visual tokens, responsive shell, and motion styles
+- `artifacts/kashgo/.replit-artifact/artifact.toml` — managed web artifact and preview routing
+- `attached_assets/` and `.local/conversation-workspace/files/attached_assets/` — original visual references supplied by the user
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first customer release is frontend-first and uses localStorage-backed account state so a new customer starts with no seeded identity, funds, transactions, beneficiaries, or promotional records.
+- Money movement validates against the customer’s available balance; all wallet balances begin at zero until a funding service is connected.
+- The layout follows the supplied mobile screen structure: purple status bar, gray header, branded logo strip, plum balance card, service panels, and bottom navigation.
+- The app keeps the supplied magenta, plum, green, and ink direction while using kashGo-only branding.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+kashGo includes the supplied welcome flow, phone sign-in, PIN entry, balance visibility controls, home services, transfers, account balances and statements, options, menu navigation, fees, notifications, profile, gift cards, vouchers, donations, and account sign-out.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The user wants the product name to be kashGo and the customer experience to follow the supplied mobile screen references.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Account state is intentionally local to the browser until production authentication, funding, and transaction providers are connected.
 
 ## Pointers
 
