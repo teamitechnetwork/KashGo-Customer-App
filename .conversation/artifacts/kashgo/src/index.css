@@ -62,6 +62,99 @@ body {
   font-family: var(--app-font-sans);
   -webkit-font-smoothing: antialiased;
 }
+.app-shell {
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  overflow-x: hidden;
+  box-shadow: 0 0 34px rgba(33, 19, 29, .08);
+}
+.enrollment-label {
+  display: block;
+  margin-bottom: .35rem;
+  color: #202020;
+  font-size: .78rem;
+  line-height: 1.1;
+}
+.enrollment-label b {
+  color: #b71362;
+}
+.enrollment-label em {
+  color: #777;
+  font-size: .78rem;
+  font-style: normal;
+}
+.enrollment-form {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  padding-top: .15rem;
+}
+.enrollment-location-form {
+  gap: .65rem;
+}
+.enrollment-pin-form {
+  max-width: 430px;
+  margin-inline: auto;
+  padding-top: .35rem;
+}
+.enrollment-photo-form {
+  gap: .65rem;
+}
+.enrollment-summary-form {
+  gap: .45rem;
+}
+.enrollment-input {
+  width: 100%;
+  height: 3.35rem;
+  border: 1px solid #d6d6d6;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 1.25rem;
+  color: #222;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.enrollment-input:focus {
+  border-color: #075541;
+  box-shadow: 0 0 0 4px rgba(7, 85, 65, .1);
+}
+.enrollment-input::placeholder {
+  color: #aaa;
+}
+.enrollment-select {
+  display: flex;
+  width: 100%;
+  height: 3.35rem;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #d6d6d6;
+  border-radius: 999px;
+  background: #7c7c7c;
+  padding: 0 1.25rem;
+  font-size: 1rem;
+  text-align: left;
+  transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
+.enrollment-select:focus-visible {
+  border-color: #075541;
+  box-shadow: 0 0 0 4px rgba(7, 85, 65, .12);
+  outline: none;
+}
+.enrollment-select:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+@media (max-width: 520px) {
+  .app-shell {
+    box-shadow: none;
+  }
+}
+@media (max-width: 360px) {
+  .enrollment-label { font-size: .8rem; }
+  .enrollment-input, .enrollment-select { height: 2.85rem; }
+}
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 .font-mono { font-family: var(--app-font-mono); }

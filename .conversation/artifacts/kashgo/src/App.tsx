@@ -12,6 +12,9 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
+import { Enrollment, emptyRegistration, type RegistrationData } from './registration';
+import { GlobalLoadingProvider, LoadingPanel, useGlobalLoading } from './loading';
+import kashGoLogo from '@assets/file_000000002c188210ae4b70614805037f_1788985542244.png';
 
 const queryClient = new QueryClient();
 const STORAGE_KEY = 'kashgo-state-v3';
@@ -37,6 +40,7 @@ type AppState = {
   biometrics: boolean;
   activities: Activity[];
   balances: { usd: number; lrd: number };
+  registration: RegistrationData;
 };
 
 const emptyState: AppState = {
@@ -49,6 +53,7 @@ const emptyState: AppState = {
   biometrics: false,
   activities: [],
   balances: { usd: 0, lrd: 0 },
+  registration: emptyRegistration,
 };
 
 function useAppState() {
@@ -57,7 +62,12 @@ function useAppState() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return emptyState;
       const parsed = JSON.parse(saved) as Partial<AppState>;
-      return { ...emptyState, ...parsed, balances: { ...emptyState.balances, ...(parsed.balances ?? {}) } };
+      return {
+        ...emptyState,
+        ...parsed,
+        balances: { ...emptyState.balances, ...(parsed.balances ?? {}) },
+        registration: { ...emptyRegistration, ...(parsed.registration ?? {}) },
+      };
     } catch {
       return emptyState;
     }
@@ -68,12 +78,8 @@ function useAppState() {
 
 function BrandMark({ footer = false }: { footer?: boolean }) {
   return (
-    <div className={`flex items-center justify-center gap-1 ${footer ? 'scale-[.72]' : ''}`} data-testid="brand-kashgo">
-      <span className="relative inline-grid h-8 w-8 place-items-center rounded-[11px] bg-[#b71362] text-white shadow-[3px_3px_0_#3d7b2d]">
-        <span className="text-[21px] font-bold leading-none">k</span>
-        <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-[#3d7b2d]" />
-      </span>
-      <span className="text-[29px] font-bold tracking-[-2px] text-[#b71362]">kash<span className="text-black">Go</span></span>
+    <div className={`flex items-center justify-center ${footer ? 'scale-[.72]' : ''}`} data-testid="brand-kashgo">
+      <img src={kashGoLogo} alt="KashGo" className="h-auto w-[148px] object-contain" />
     </div>
   );
 }
@@ -95,7 +101,7 @@ function BalanceCard({ state }: { state: AppState }) {
 
 function BottomNav({ active }: { active: string }) {
   const links = [{ href: '/home', label: 'Home', icon: House }, { href: '/transfers', label: 'Transfers', icon: WalletCards }, { href: '/account', label: 'My Account', icon: UserRound }, { href: '/options', label: 'Options', icon: Settings }];
-  return <nav className="fixed bottom-0 left-1/2 z-30 flex h-[88px] w-full max-w-[461px] -translate-x-1/2 items-start justify-around bg-white px-4 pt-4">{links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`flex flex-col items-center gap-2 text-[13px] ${active === label ? 'font-semibold text-[#8f1649]' : 'text-black'}`}><Icon size={25} strokeWidth={active === label ? 2.8 : 2.5} /><span>{label}</span></Link>)}</nav>;
+  return <nav className="fixed bottom-0 left-1/2 z-30 flex h-[88px] w-full max-w-[520px] -translate-x-1/2 items-start justify-around bg-white px-4 pt-4 shadow-[0_-8px_24px_rgba(57,32,52,.06)]">{links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`flex flex-col items-center gap-2 text-[13px] ${active === label ? 'font-semibold text-[#8f1649]' : 'text-black'}`}><Icon size={25} strokeWidth={active === label ? 2.8 : 2.5} /><span>{label}</span></Link>)}</nav>;
 }
 
 function MenuDrawer({ close }: { close: () => void }) {
@@ -112,17 +118,23 @@ function MenuDrawer({ close }: { close: () => void }) {
 function Shell({ children, title, active, back = false, balance = false, menu = false }: { children: ReactNode; title: string; active: string; back?: boolean; balance?: boolean; menu?: boolean }) {
   const [drawer, setDrawer] = useState(false);
   const [state] = useAppState();
-  return <div className="min-h-[100dvh] bg-white pb-[88px]"><AppHeader title={title} back={back} onMenu={() => setDrawer(true)} />{balance && <div className="bg-[#e5e5e5] pb-0 pt-0"><BalanceCard state={state} /></div>}{children}<BottomNav active={active}/>{menu && drawer && <MenuDrawer close={() => setDrawer(false)} />}</div>;
+  return <div className="app-shell min-h-[100dvh] bg-white pb-[88px]"><AppHeader title={title} back={back} onMenu={() => setDrawer(true)} />{balance && <div className="bg-[#e5e5e5] pb-0 pt-0"><BalanceCard state={state} /></div>}{children}<BottomNav active={active}/>{menu && drawer && <MenuDrawer close={() => setDrawer(false)} />}</div>;
 }
 
 function Splash() {
   const [, setLocation] = useLocation();
-  useEffect(() => { const timer = window.setTimeout(() => setLocation('/welcome'), 1100); return () => window.clearTimeout(timer); }, [setLocation]);
-  return <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-white"><BrandMark /><div className="mt-28 text-center text-[#9b2456]"><p className="text-[20px] font-semibold">0%</p><p className="mt-12 text-[18px]">Loading application data...</p></div></main>;
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const started = Date.now();
+    const interval = window.setInterval(() => setProgress(Math.min(100, Math.round(((Date.now() - started) / 10000) * 100))), 100);
+    const timer = window.setTimeout(() => setLocation('/welcome'), 10000);
+    return () => { window.clearInterval(interval); window.clearTimeout(timer); };
+  }, [setLocation]);
+  return <main className="app-shell flex min-h-[100dvh] flex-col items-center justify-center bg-white"><BrandMark /><div className="relative mt-24 grid h-28 w-28 place-items-center text-[#9b2456]"><div className="absolute inset-0 animate-spin rounded-full border-[5px] border-[#d8efdf] border-t-[#b71362] border-r-[#075541]" /><p className="text-[20px] font-semibold">{progress}%</p></div><p className="mt-8 text-center text-[17px] text-[#9b2456]">Loading application data...</p><p className="mt-2 text-[12px] text-[#777]">Preparing your secure wallet</p></main>;
 }
 
 function Welcome() {
-  return <main className="min-h-[100dvh] bg-[#e8e8e8]"><div className="mx-auto flex min-h-[100dvh] w-full max-w-[461px] flex-col items-center px-7 pt-12 text-center"><BrandMark /><h1 className="mt-9 text-[38px] font-medium tracking-[-2px] text-black">Customer</h1><p className="mt-7 max-w-[180px] text-[17px] font-semibold leading-5 text-black">Improving the way you...<br/>receive<br/>send<br/>pay<br/>save</p><div className="mt-auto w-full space-y-5 pb-8"><Link href="/login" className="flex h-[76px] w-full items-center justify-center rounded-full bg-white text-[20px] font-bold text-[#aa1d5e] shadow-sm">Sign in</Link><p className="text-[14px] text-black">don't have an account? lets get started!</p><Link href="/login?create=1" className="flex h-[76px] w-full items-center justify-center rounded-full bg-[#075541] text-[20px] font-bold text-white">New account</Link><p className="pt-24 text-[14px] font-semibold text-[#075541]">our privacy commitment to you</p><p className="pt-5 text-[14px] text-[#a3285a]">kashGo customer</p></div></div></main>;
+  return <main className="app-shell min-h-[100dvh] bg-[#e8e8e8]"><div className="mx-auto flex min-h-[100dvh] w-full max-w-[461px] flex-col items-center px-7 pt-12 text-center"><BrandMark /><h1 className="mt-9 text-[38px] font-medium tracking-[-2px] text-black">Customer</h1><p className="mt-7 max-w-[180px] text-[17px] font-semibold leading-5 text-black">Improving the way you...<br/>receive<br/>send<br/>pay<br/>save</p><div className="mt-auto w-full space-y-5 pb-8"><Link href="/login" className="flex h-16 w-full items-center justify-center rounded-full bg-white text-[18px] font-bold text-[#aa1d5e] shadow-sm">Sign in</Link><p className="text-[14px] text-black">don't have an account? let's get started!</p><Link href="/enrollment" className="flex h-16 w-full items-center justify-center rounded-full bg-[#075541] text-[18px] font-bold text-white">Register</Link><p className="pt-16 text-[14px] font-semibold text-[#075541]">our privacy commitment to you</p><p className="pt-5 text-[14px] text-[#a3285a]">KashGo customer</p></div></div></main>;
 }
 
 function AuthLogo() {
@@ -130,7 +142,7 @@ function AuthLogo() {
 }
 
 function Field({ label, ...props }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
-  return <label className="block text-left"><span className="mb-2 block text-[13px] font-semibold uppercase tracking-wide text-[#5d5d5d]">{label}</span><input className="h-12 w-full border-0 border-b border-[#b7b7b7] bg-transparent px-1 text-[20px] font-semibold outline-none focus:border-[#a71958]" {...props}/></label>;
+  return <label className="block text-left"><span className="mb-2 block text-[13px] font-semibold uppercase tracking-wide text-[#5d5d5d]">{label}</span><input className="h-14 w-full rounded-2xl border border-[#d6cbd1] bg-white/80 px-4 text-[18px] font-semibold outline-none transition focus:border-[#a71958] focus:ring-4 focus:ring-[#a71958]/10" {...props}/></label>;
 }
 
 function Login({ setState }: { setState: React.Dispatch<React.SetStateAction<AppState>> }) {
@@ -139,21 +151,51 @@ function Login({ setState }: { setState: React.Dispatch<React.SetStateAction<App
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [remember, setRemember] = useState(false);
-  const submit = (event: FormEvent) => { event.preventDefault(); if (!phone.trim() || (creating && !name.trim())) return; setState((current) => ({ ...current, phone: phone.trim(), name: name.trim() || current.name })); setLocation(`/pin${creating ? '?create=1' : ''}`); };
-  return <main className="min-h-[100dvh] bg-[#e8e8e8]"><div className="mx-auto min-h-[100dvh] max-w-[461px] px-12 pt-5"><button onClick={() => setLocation('/welcome')} className="text-[#aa1d5e]" aria-label="Back"><ArrowLeft size={31}/></button><AuthLogo/><h1 className="mt-24 text-center text-[21px] font-bold text-[#474747]">{creating ? 'Create kashGo Customer account' : 'Welcome to kashGo Customer'}</h1><form onSubmit={submit} className="mt-12 space-y-5">{creating && <Field label="Your name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Full name" required/>}<Field label="Mobile number" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="0776836689" inputMode="tel" required/><button type="button" onClick={() => setRemember((value) => !value)} className="flex items-center gap-4 text-[17px] text-[#4a4a4a]"><span className={`grid h-6 w-6 place-items-center rounded-[2px] border-2 ${remember ? 'border-[#aa1d5e] bg-[#aa1d5e] text-white' : 'border-[#aa1d5e] bg-transparent'}`}>{remember && <Check size={17}/>}</span>Remember me</button><button type="submit" className="mt-10 h-[76px] w-full rounded-full bg-[#aa1d5e] text-[20px] font-bold text-white">{creating ? 'Next' : 'Next'}</button></form><p className="mt-44 text-center text-[14px] text-[#646464]">You can enable fingerprint login from the Options<br/>menu for a faster sign-in experience.</p><Link href="/login?create=1" className="mt-10 flex h-[58px] items-center justify-center rounded-full border border-[#666] text-[16px] font-semibold text-[#91b984]">New account, lets get started</Link><button onClick={() => setLocation('/login')} className="mt-10 block w-full text-center text-[15px] font-bold text-[#8e164a]">forgot your password?</button></div></main>;
+  const [error, setError] = useState('');
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length < 8) {
+      setError('Enter a valid mobile number to continue.');
+      return;
+    }
+    if (creating && name.trim().length < 2) {
+      setError('Add your name so we can personalize your wallet.');
+      return;
+    }
+    setError('');
+    setState((current) => ({ ...current, phone: phone.trim(), name: name.trim() || current.name }));
+    setLocation(`/pin${creating ? '?create=1' : ''}`);
+  };
+  return <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#fff_0%,#f4e9ee_45%,#e8e8e8_100%)]"><div className="mx-auto flex min-h-[100dvh] max-w-[461px] flex-col px-7 pb-8 pt-5"><button onClick={() => setLocation('/welcome')} className="grid h-11 w-11 place-items-center rounded-full bg-white/80 text-[#aa1d5e] shadow-sm" aria-label="Back"><ArrowLeft size={25}/></button><AuthLogo/><div className="mt-12 rounded-[28px] bg-white/75 px-6 py-7 shadow-[0_18px_45px_rgba(57,32,52,.08)]"><p className="text-center text-[12px] font-bold uppercase tracking-[.2em] text-[#075541]">{creating ? 'Create your wallet' : 'Secure sign in'}</p><h1 className="mt-3 text-center text-[25px] font-bold tracking-[-.5px] text-[#3f2635]">{creating ? 'Welcome to KashGo' : 'Good to see you again'}</h1><p className="mt-2 text-center text-[14px] leading-5 text-[#746871]">{creating ? 'Set up your customer profile in under a minute.' : 'Use your mobile number to continue to your wallet.'}</p><form onSubmit={submit} className="mt-8 space-y-5">{creating && <Field label="Your name" value={name} onChange={(event) => { setName(event.target.value); setError(''); }} placeholder="Full name" autoComplete="name" required/>}<Field label="Mobile number" value={phone} onChange={(event) => { setPhone(event.target.value); setError(''); }} placeholder="0776 836 689" inputMode="tel" autoComplete="tel" required/><button type="button" onClick={() => setRemember((value) => !value)} className="flex items-center gap-3 text-[15px] font-semibold text-[#4a4a4a]"><span className={`grid h-6 w-6 place-items-center rounded-lg border-2 ${remember ? 'border-[#aa1d5e] bg-[#aa1d5e] text-white' : 'border-[#b891a6] bg-transparent'}`}>{remember && <Check size={16}/>}</span>Remember me on this device</button>{error && <p role="alert" className="rounded-xl bg-[#fff0f4] px-4 py-3 text-center text-[13px] font-semibold text-[#a71958]">{error}</p>}<button type="submit" className="h-14 w-full rounded-full bg-[#a71958] text-[17px] font-bold text-white shadow-[0_10px_20px_rgba(167,25,88,.2)] transition hover:-translate-y-0.5 disabled:opacity-50">{creating ? 'Continue to PIN' : 'Continue to PIN'} <ArrowRight className="ml-2 inline" size={18}/></button></form></div><div className="mt-auto pt-6 text-center"><p className="text-[13px] text-[#646464]">Your PIN protects every payment and transfer.</p><button onClick={() => setLocation(creating ? '/login' : '/login?create=1')} className="mt-4 text-[15px] font-bold text-[#075541]">{creating ? 'Already have an account? Sign in' : 'New to KashGo? Create an account'}</button></div></div></main>;
 }
 
-function PinPage({ setState }: { setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+function PinPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
   const [, setLocation] = useLocation();
   const [pin, setPin] = useState('');
+  const [busy, setBusy] = useState(false);
   const keys = ['1', '8', '5', '3', '0', '6', '4', '2', '9', '7'];
-  const submit = (value: string) => { if (value.length === 5) { setState((current) => ({ ...current, authenticated: true })); setLocation('/home'); } };
-  return <main className="min-h-[100dvh] bg-[#e8e8e8]"><div className="mx-auto flex min-h-[100dvh] max-w-[461px] flex-col px-12 pt-5"><button onClick={() => setLocation('/login')} className="text-[#aa1d5e]" aria-label="Back"><ArrowLeft size={31}/></button><AuthLogo/><p className="mt-7 text-center text-[19px] text-[#6a6a6a]">enter your password</p><div className="mt-7 flex justify-center gap-6">{[0,1,2,3,4].map((index) => <span key={index} className={`h-[52px] w-[52px] rounded-full ${index < pin.length ? 'bg-[#a71958]' : 'bg-transparent'}`}/>)}</div><div className="mx-auto mt-12 grid w-full max-w-[345px] grid-cols-3 gap-5">{keys.slice(0,9).map((key) => <button key={key} onClick={() => { const value = pin.length < 5 ? pin + key : pin; setPin(value); submit(value); }} className="aspect-square rounded-full border border-[#dedede] text-[28px] text-black">{key}</button>)}<span/><button onClick={() => { const value = pin.length < 5 ? pin + '7' : pin; setPin(value); submit(value); }} className="aspect-square rounded-full border border-[#dedede] text-[28px]">7</button><button onClick={() => setPin(pin.slice(0, -1))} className="aspect-square rounded-full bg-[#dedede] text-[34px]" aria-label="Delete password"><ArrowLeft size={34} className="mx-auto"/></button></div><button onClick={() => setLocation('/login')} className="mt-auto pb-5 text-center text-[15px] font-bold text-[#8e164a]">forgot your password?</button></div></main>;
+  const submit = (value: string) => {
+    if (value.length === 5 && !busy) {
+      setBusy(true);
+      window.setTimeout(() => {
+        setState((current) => ({ ...current, authenticated: true }));
+        setLocation('/home');
+      }, 260);
+    }
+  };
+  const press = (key: string) => {
+    if (busy || pin.length >= 5) return;
+    const value = pin + key;
+    setPin(value);
+    submit(value);
+  };
+  return <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#fff_0%,#f4e9ee_45%,#e8e8e8_100%)]"><div className="mx-auto flex min-h-[100dvh] max-w-[461px] flex-col px-7 pb-6 pt-5"><button onClick={() => setLocation('/login')} className="grid h-11 w-11 place-items-center rounded-full bg-white/80 text-[#aa1d5e] shadow-sm" aria-label="Back"><ArrowLeft size={25}/></button><AuthLogo/><div className="mt-8 text-center"><p className="text-[12px] font-bold uppercase tracking-[.2em] text-[#075541]">Welcome back{state.name ? `, ${state.name.split(' ')[0]}` : ''}</p><h1 className="mt-3 text-[25px] font-bold tracking-[-.5px] text-[#3f2635]">Enter your 5-digit PIN</h1><p className="mt-2 text-[14px] text-[#746871]">Your PIN keeps your balance and payments private.</p></div><div className="mt-7 flex justify-center gap-3" aria-label={`${pin.length} of 5 digits entered`}>{[0,1,2,3,4].map((index) => <span key={index} className={`h-4 w-4 rounded-full border-2 transition ${index < pin.length ? 'border-[#a71958] bg-[#a71958] shadow-[0_0_0_5px_rgba(167,25,88,.1)]' : 'border-[#c4aebb] bg-transparent'}`} />)}</div><div className="mx-auto mt-8 grid w-full max-w-[330px] grid-cols-3 gap-3">{keys.slice(0,9).map((key) => <button key={key} onClick={() => press(key)} className="aspect-square rounded-full border border-[#decfd7] bg-white/80 text-[25px] font-semibold text-[#3f2635] shadow-sm transition hover:-translate-y-0.5 hover:border-[#a71958] active:scale-95">{key}</button>)}<span/><button onClick={() => press('7')} className="aspect-square rounded-full border border-[#decfd7] bg-white/80 text-[25px] font-semibold text-[#3f2635] shadow-sm transition hover:-translate-y-0.5 hover:border-[#a71958] active:scale-95">7</button><button onClick={() => setPin(pin.slice(0, -1))} disabled={!pin.length || busy} className="aspect-square rounded-full bg-[#eadfe5] text-[34px] text-[#7b5368] disabled:opacity-40" aria-label="Delete last PIN digit"><ArrowLeft size={29} className="mx-auto"/></button></div><div className="mt-auto flex flex-col items-center gap-4 pt-5"><p className="text-[13px] text-[#777]">{busy ? 'Opening your wallet...' : 'PIN protected access'}</p><button onClick={() => setLocation('/login')} className="text-[15px] font-bold text-[#8e164a]">Forgot your PIN?</button></div></div></main>;
 }
 
 function Home({ state }: { state: AppState }) {
   const [, setLocation] = useLocation();
-  return <Shell title="Home" active="Home" balance menu><main className="bg-white px-7 pt-4 text-center"><h2 className="text-[20px] font-bold text-[#a51d5a]">welcome to kashGo</h2><div className="mt-3 grid grid-cols-2 gap-3">{[{ label: 'Kash', icon: WalletCards, href: '/kash' }, { label: 'Gift Card', icon: Gift, href: '/gift-cards' }, { label: 'Vouchers', icon: Receipt, href: '/vouchers' }, { label: 'KGO Pay', icon: Smartphone, href: '/kgo-pay' }, { label: 'donation', icon: HandHeart, href: '/donations' }].map(({ label, icon: Icon, href }) => <Link key={label} href={href} className="flex h-[102px] flex-col items-center justify-center gap-2 rounded-[14px] border border-[#555] text-[14px] font-bold text-[#4d4d4d]"><Icon size={42} strokeWidth={2.1}/><span>{label}</span></Link>)}</div><div className="no-scrollbar mt-9 flex gap-3 overflow-x-auto pb-4 text-[#8f164a]">{[{ label: 'LEC', href: '/lec' }, { label: 'Data', href: '/data' }, { label: 'Airtime', href: '/airtime' }, { label: 'Merchant', href: '/merchant' }].map(({ label, href }) => <button key={label} onClick={() => setLocation(href)} className="flex min-w-[108px] flex-col items-center justify-center gap-2 rounded-[14px] border border-[#8f164a] py-4 text-[14px] font-bold"><Zap size={24}/><span>{label}</span></button>)}</div>{state.activities.length === 0 && <p className="mt-3 text-[13px] text-[#777]">Your recent activity will appear here.</p>}</main></Shell>;
+  return <Shell title="Home" active="Home" balance menu><main className="bg-white px-7 pt-4 text-center"><h2 className="text-[20px] font-bold text-[#a51d5a]">welcome to KashGo</h2><div className="mt-3 grid grid-cols-2 gap-3">{[{ label: 'Kash', icon: WalletCards, href: '/kash' }, { label: 'Gift Card', icon: Gift, href: '/gift-cards' }, { label: 'Vouchers', icon: Receipt, href: '/vouchers' }, { label: 'KGO Pay', icon: Smartphone, href: '/kgo-pay' }, { label: 'donation', icon: HandHeart, href: '/donations' }].map(({ label, icon: Icon, href }) => <Link key={label} href={href} className="flex h-[102px] flex-col items-center justify-center gap-2 rounded-[14px] border border-[#555] text-[14px] font-bold text-[#4d4d4d]"><Icon size={42} strokeWidth={2.1}/><span>{label}</span></Link>)}</div><div className="no-scrollbar mt-9 flex gap-3 overflow-x-auto pb-4 text-[#8f164a]">{[{ label: 'LEC', href: '/lec' }, { label: 'Data', href: '/data' }, { label: 'Airtime', href: '/airtime' }, { label: 'Merchant', href: '/merchant' }].map(({ label, href }) => <button key={label} onClick={() => setLocation(href)} className="flex min-w-[108px] flex-col items-center justify-center gap-2 rounded-[14px] border border-[#8f164a] py-4 text-[14px] font-bold"><Zap size={24}/><span>{label}</span></button>)}</div>{state.activities.length === 0 && <p className="mt-3 text-[13px] text-[#777]">Your recent activity will appear here.</p>}</main></Shell>;
 }
 
 function BalanceAndSection({ state, title, children }: { state: AppState; title: string; children: ReactNode }) {
@@ -162,7 +204,7 @@ function BalanceAndSection({ state, title, children }: { state: AppState; title:
 
 function TransferPage({ state }: { state: AppState }) {
   const [, setLocation] = useLocation();
-  return <Shell title="Transfers" active="Transfers" menu><BalanceAndSection state={state} title="Transfers"><div className="space-y-4"><button onClick={() => setLocation('/send')} className="w-full overflow-hidden rounded-[14px] border border-[#666] text-left"><span className="block bg-[#7b7b7b] px-4 py-4 text-[15px] font-bold text-white">To kashGo member</span><span className="flex items-center gap-6 px-5 py-6 text-[16px] font-bold text-[#9b1b59]"><WalletCards size={38}/>Send money to kashGo member</span></button><button onClick={() => setLocation('/send')} className="w-full overflow-hidden rounded-[14px] border border-[#666] text-left"><span className="block bg-[#7b7b7b] px-4 py-4 text-[15px] font-bold text-white">To Non-kashGo</span><span className="flex items-center gap-6 px-5 py-6 text-[16px] font-bold text-[#9b1b59]"><ArrowUpRight size={38}/>Send money to peer</span></button></div></BalanceAndSection></Shell>;
+  return <Shell title="Transfers" active="Transfers" menu><BalanceAndSection state={state} title="Transfers"><div className="space-y-4"><button onClick={() => setLocation('/send')} className="w-full overflow-hidden rounded-[14px] border border-[#666] text-left"><span className="block bg-[#7b7b7b] px-4 py-4 text-[15px] font-bold text-white">To KashGo member</span><span className="flex items-center gap-6 px-5 py-6 text-[16px] font-bold text-[#9b1b59]"><WalletCards size={38}/>Send money to KashGo member</span></button><button onClick={() => setLocation('/send')} className="w-full overflow-hidden rounded-[14px] border border-[#666] text-left"><span className="block bg-[#7b7b7b] px-4 py-4 text-[15px] font-bold text-white">To Non-KashGo</span><span className="flex items-center gap-6 px-5 py-6 text-[16px] font-bold text-[#9b1b59]"><ArrowUpRight size={38}/>Send money to peer</span></button></div></BalanceAndSection></Shell>;
 }
 
 function SendPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
@@ -194,8 +236,13 @@ function NotificationsPage() {
 
 function ProfilePage({ state }: { state: AppState }) {
   const [, setLocation] = useLocation();
-  const fields = [['phone number', state.phone || 'Not added'], ['country', 'Not added'], ['county', 'Not added'], ['City/town', 'Not added'], ['ID type', 'Not added'], ['ID number', 'Not added']];
+  const fields = [['phone number', state.phone || 'Not added'], ['country', state.registration.country || 'Not added'], ['county', state.registration.county || 'Not added'], ['City/town', state.registration.city || 'Not added'], ['ID type', state.registration.idType || 'Not added'], ['ID number', state.registration.idNumber || 'Not added']];
   return <Shell title="profile" active="" back><main className="px-7 pt-3"><div className="flex items-center gap-5"><div className="grid h-28 w-28 shrink-0 place-items-center rounded-full border-2 border-[#8f164a] bg-black text-white"><UserRound size={47}/></div><div className="text-left"><p className="text-[20px] font-bold text-[#075541]">{state.phone || 'Not added'}</p><p className="text-[17px] font-bold text-[#8f164a]">{state.name || 'Customer'}</p><p className="text-[18px]">Customer</p></div></div><div className="mt-8 border-t border-black">{fields.map(([label, value]) => <div key={label} className="flex justify-center gap-3 border-b border-[#777] py-2 text-[16px]"><span>{label} :</span><span>{value}</span></div>)}</div><button onClick={() => setLocation('/account')} className="mt-7 w-full text-center text-[#456d63]">Delete account</button><button onClick={() => setLocation('/account')} className="mx-auto mt-5 block h-14 w-[170px] rounded-full bg-[#075541] text-white">edit</button><BrandMark footer/></main></Shell>;
+}
+
+function EnrollmentRoute({ setState }: { setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+  const [, setLocation] = useLocation();
+  return <Enrollment onCancel={() => setLocation('/welcome')} onComplete={(registration) => { setState((current) => ({ ...current, authenticated: true, name: `${registration.firstName} ${registration.lastName}`.trim(), phone: registration.phone, email: registration.email, registration })); setLocation('/home'); }} />;
 }
 
 function SimplePage({ title, icon: Icon, children }: { title: string; icon: typeof Phone; children: ReactNode }) {
@@ -204,15 +251,13 @@ function SimplePage({ title, icon: Icon, children }: { title: string; icon: type
 
 function useLoadingState(duration = 500) {
   const [loading, setLoading] = useState(true);
+  const { show, hide } = useGlobalLoading();
   useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), duration);
-    return () => window.clearTimeout(timer);
+    show('Fetching data...');
+    const timer = window.setTimeout(() => { setLoading(false); hide(); }, duration);
+    return () => { window.clearTimeout(timer); hide(); };
   }, [duration]);
   return loading;
-}
-
-function LoadingPanel({ label = 'Loading...' }: { label?: string }) {
-  return <div className="flex flex-col items-center justify-center gap-4 text-[#a71958]"><div className="h-12 w-12 animate-spin rounded-full border-4 border-[#e7c1d3] border-t-[#a71958]" /><p className="text-[16px] font-semibold">{label}</p></div>;
 }
 
 function ServiceFooter() {
@@ -220,15 +265,15 @@ function ServiceFooter() {
 }
 
 function ServiceShell({ title, state, children }: { title: string; state: AppState; children: ReactNode }) {
-  return <div className="flex min-h-[100dvh] flex-col bg-white"><AppHeader title={title} back /><div className="bg-[#e5e5e5]"><BalanceCard state={state} /></div>{children}</div>;
+  return <div className="app-shell flex min-h-[100dvh] flex-col bg-white"><AppHeader title={title} back /><div className="bg-[#e5e5e5]"><BalanceCard state={state} /></div>{children}</div>;
 }
 
 function RoundedInput({ label, placeholder, type = 'text', value, onChange }: { label: string; placeholder?: string; type?: string; value: string; onChange: (value: string) => void }) {
   return <label className="block text-right"><span className="mb-2 block text-[14px] text-black">{label} <b className="text-[#a71958]">*</b></span><input value={value} onChange={(event) => onChange(event.target.value)} type={type} placeholder={placeholder} className="h-[54px] w-full rounded-full border border-[#d6d6d6] bg-white px-5 text-[18px] outline-none focus:border-[#a71958]" /></label>;
 }
 
-function SelectPill({ label }: { label: string }) {
-  return <label className="block text-right"><span className="mb-2 block text-[14px] text-black">{label} <b className="text-[#a71958]">*</b></span><span className="relative block"><select disabled className="h-[54px] w-full appearance-none rounded-full border border-[#d6d6d6] bg-[#7c7c7c] px-5 text-[16px] text-white outline-none"><option>Select</option></select><ChevronRight className="pointer-events-none absolute right-4 top-1/2 rotate-90 text-white" size={23}/></span></label>;
+function SelectPill({ label, value = 'Select', options = ['Select'], onChange, disabled = false }: { label: string; value?: string; options?: string[]; onChange?: (value: string) => void; disabled?: boolean }) {
+  return <label className="block text-right"><span className="mb-2 block text-[14px] text-black">{label} <b className="text-[#a71958]">*</b></span><span className="relative block"><select value={value} onChange={(event) => onChange?.(event.target.value)} disabled={disabled} className="h-[54px] w-full appearance-none rounded-full border border-[#d6d6d6] bg-[#7c7c7c] px-5 text-[16px] text-white outline-none transition focus:border-[#a71958] disabled:cursor-not-allowed disabled:opacity-80">{options.map((option) => <option key={option} value={option}>{option}</option>)}</select><ChevronRight className="pointer-events-none absolute right-4 top-1/2 rotate-90 text-white" size={23}/></span></label>;
 }
 
 function ServiceActions({ primary, onPrimary, primaryDisabled = false }: { primary: string; onPrimary?: () => void; primaryDisabled?: boolean }) {
@@ -236,21 +281,86 @@ function ServiceActions({ primary, onPrimary, primaryDisabled = false }: { prima
   return <div className="flex items-center justify-between gap-5"><button onClick={() => window.history.back()} className="h-14 flex-1 rounded-full border border-[#d6d6d6] text-[16px] font-semibold">cancel</button><button onClick={onPrimary} disabled={primaryDisabled} className="h-14 flex-1 rounded-full bg-[#075541] text-[16px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{primary}</button></div>;
 }
 
-function LECPage({ state }: { state: AppState }) {
+function LECPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
   const [meter, setMeter] = useState('');
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const submit = () => { if (!meter || !amount) { setMessage('Enter the meter number and amount.'); return; } setBusy(true); window.setTimeout(() => { setBusy(false); setMessage('Unable to validate while payment services are unavailable.'); }, 650); };
-  return <ServiceShell title="LEC - purchase" state={state}><main className="flex flex-1 flex-col px-8 pt-5"><div className="space-y-14"><RoundedInput label="meter number" value={meter} onChange={setMeter}/><RoundedInput label="Amount" type="number" value={amount} onChange={setAmount}/><SelectPill label="from account"/></div><div className="mt-auto space-y-6 pb-4 pt-10"><button className="mx-auto block h-14 rounded-full bg-[#a71958] px-9 text-[14px] font-bold text-white">reprint receipt</button><ServiceActions primary={busy ? 'loading...' : 'VALIDATE'} onPrimary={submit} primaryDisabled={busy}/>{message && <p className="text-center text-[13px] font-semibold text-[#a71958]">{message}</p>}<ServiceFooter/></div></main></ServiceShell>;
+  const { show, hide } = useGlobalLoading();
+  const submit = () => {
+    const value = Number(amount);
+    if (!meter.trim() || !value) { setMessage('Enter your meter number and amount.'); return; }
+    if (value > state.balances.usd) { setMessage('Insufficient USD balance for this payment.'); return; }
+    setBusy(true);
+    show('Processing electricity payment...');
+    window.setTimeout(() => {
+      setState((current) => ({ ...current, balances: { ...current.balances, usd: current.balances.usd - value }, activities: [{ id: String(Date.now()), title: 'LEC payment', subtitle: `Meter ${meter}`, amount: value.toFixed(2), currency: 'USD', direction: 'out', date: 'Now', icon: 'bill' }, ...current.activities] }));
+      setBusy(false);
+      hide();
+      setMessage('Payment successful. Your electricity credit is on the way.');
+    }, 450);
+  };
+  return <ServiceShell title="LEC - purchase" state={state}><main className="flex flex-1 flex-col px-8 pt-5"><div className="rounded-2xl bg-[#f8edf3] px-4 py-3 text-left"><p className="text-[13px] font-bold uppercase tracking-wide text-[#a71958]">Pay electricity</p><p className="mt-1 text-[13px] leading-5 text-[#6f5967]">Enter your meter number and the amount you want to pay.</p></div><div className="mt-7 space-y-7"><RoundedInput label="meter number" value={meter} onChange={setMeter} placeholder="e.g. 123456789"/><RoundedInput label="Amount (USD)" type="number" value={amount} onChange={setAmount} placeholder="0.00"/><SelectPill label="from account" value="USD wallet" options={['USD wallet']} disabled/></div><div className="mt-auto space-y-4 pb-4 pt-10"><ServiceActions primary={busy ? 'processing...' : 'pay now'} onPrimary={submit} primaryDisabled={busy}/>{message && <p role="status" className={`text-center text-[13px] font-semibold ${message.startsWith('Payment successful') ? 'text-[#075541]' : 'text-[#a71958]'}`}>{message}</p>}<ServiceFooter/></div></main></ServiceShell>;
 }
 
-function TopUpPage({ state, title, airtime = false }: { state: AppState; title: string; airtime?: boolean }) {
+function TopUpPage({ state, setState, title, airtime = false }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>>; title: string; airtime?: boolean }) {
+  const [, setLocation] = useLocation();
+  const [audience, setAudience] = useState<'Me' | 'Other'>('Me');
+  const [recipient, setRecipient] = useState('');
+  const [provider, setProvider] = useState('Select');
+  const [option, setOption] = useState('Select');
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState(airtime ? 'Please enter an amount between 1 (minimum) and 100 (maximum).' : 'The amount is automatically set based on the option you selected and cannot be modified.');
-  const submit = () => { if (!amount) { setMessage(airtime ? 'Please enter an amount between 1 (minimum) and 100 (maximum).' : 'Select a provider and option before topping up.'); return; } setBusy(true); window.setTimeout(() => { setBusy(false); setMessage('Unable to complete the top up while payment services are unavailable.'); }, 650); };
-  return <ServiceShell title={title} state={state}><main className="flex flex-1 flex-col px-7 pt-4"><div className="flex gap-3"><button className="h-14 flex-1 rounded-[10px] bg-[#bc1c66] text-[16px] font-bold text-white">Me</button><button className="h-14 flex-1 rounded-[10px] border border-[#aaa] text-[16px] font-bold text-[#777]">Other</button></div><div className="mt-5 space-y-7"><SelectPill label="select provider"/><SelectPill label="select option"/><RoundedInput label="Amount" type="number" value={amount} onChange={setAmount}/><p className="px-5 text-center text-[14px] italic leading-5">{message}</p><SelectPill label="from account"/></div><div className="mt-auto pb-4 pt-4"><ServiceActions primary={busy ? 'loading...' : 'top up'} onPrimary={submit} primaryDisabled={busy}/><ServiceFooter/></div></main></ServiceShell>;
+  const [message, setMessage] = useState('');
+  const { show, hide } = useGlobalLoading();
+  const providers = ['Select', 'Lonestar Cell MTN', 'Orange Liberia'];
+  const options = airtime ? ['Select', '1.00', '5.00', '10.00', '20.00'] : ['Select', '500 MB · 1 day · $1', '1 GB · 3 days · $2', '3 GB · 7 days · $5'];
+  const chooseOption = (value: string) => {
+    setOption(value);
+    if (airtime && value !== 'Select') setAmount(value);
+    if (!airtime && value !== 'Select') setAmount(value.includes('$5') ? '5' : value.includes('$2') ? '2' : '1');
+    setMessage('');
+  };
+  const submit = () => {
+    const value = Number(amount);
+    if (provider === 'Select' || option === 'Select') { setMessage('Choose a provider and package first.'); return; }
+    if (audience === 'Other' && recipient.replace(/\D/g, '').length < 8) { setMessage('Enter a valid recipient number.'); return; }
+    if (!value || (airtime && (value < 1 || value > 100))) { setMessage(airtime ? 'Enter an airtime amount between $1 and $100.' : 'Choose a data package to continue.'); return; }
+    if (value > state.balances.usd) { setMessage('Insufficient USD balance for this top up.'); return; }
+    setBusy(true);
+    show(airtime ? 'Processing airtime top up...' : 'Processing data top up...');
+    window.setTimeout(() => {
+      const target = audience === 'Me' ? 'my number' : recipient;
+      setState((current) => ({ ...current, balances: { ...current.balances, usd: current.balances.usd - value }, activities: [{ id: String(Date.now()), title: `${airtime ? 'Airtime' : 'Data'} top up`, subtitle: `${provider} · ${target}`, amount: value.toFixed(2), currency: 'USD', direction: 'out', date: 'Now', icon: airtime ? 'airtime' : 'bill' }, ...current.activities] }));
+      setBusy(false);
+      hide();
+      setMessage(`${airtime ? 'Airtime' : 'Data'} top up successful.`);
+    }, 450);
+  };
+  return <ServiceShell title={title} state={state}><main className="flex flex-1 flex-col px-7 pt-4"><div className="flex gap-3 rounded-2xl bg-[#f8edf3] p-1"><button onClick={() => { setAudience('Me'); setMessage(''); }} className={`h-12 flex-1 rounded-xl text-[15px] font-bold transition ${audience === 'Me' ? 'bg-[#bc1c66] text-white shadow-sm' : 'text-[#777]'}`}>Me</button><button onClick={() => { setAudience('Other'); setMessage(''); }} className={`h-12 flex-1 rounded-xl text-[15px] font-bold transition ${audience === 'Other' ? 'bg-[#bc1c66] text-white shadow-sm' : 'text-[#777]'}`}>Someone else</button></div><div className="mt-5 space-y-5"><SelectPill label="select provider" value={provider} options={providers} onChange={(value) => { setProvider(value); setMessage(''); }}/><SelectPill label={airtime ? 'select amount' : 'select data package'} value={option} options={options} onChange={chooseOption}/>{audience === 'Other' && <RoundedInput label="recipient mobile number" value={recipient} onChange={setRecipient} placeholder="0776 836 689" type="tel"/>}<RoundedInput label="Amount (USD)" type="number" value={amount} onChange={setAmount} placeholder="0.00"/><div className="rounded-2xl bg-[#f8f5f6] px-4 py-3 text-[13px] leading-5 text-[#6f5967]"><p className="font-bold text-[#3f2635]">From your USD wallet</p><p>{amount ? `$${Number(amount).toFixed(2)} will be charged after you confirm.` : 'Choose a package to see the amount.'}</p></div><SelectPill label="from account" value="USD wallet" options={['USD wallet']} disabled/></div><div className="mt-auto pb-4 pt-5"><ServiceActions primary={busy ? 'processing...' : 'top up now'} onPrimary={submit} primaryDisabled={busy}/>{message && <p role="status" className={`mt-4 text-center text-[13px] font-semibold ${message.endsWith('successful.') ? 'text-[#075541]' : 'text-[#a71958]'}`}>{message}</p>}<button onClick={() => setLocation('/home')} className="mx-auto mt-3 block text-[13px] font-semibold text-[#777]">Back to home</button><ServiceFooter/></div></main></ServiceShell>;
+}
+
+function BillPaymentPage({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+  const [provider, setProvider] = useState('Select');
+  const [account, setAccount] = useState('');
+  const [amount, setAmount] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const { show, hide } = useGlobalLoading();
+  const submit = () => {
+    const value = Number(amount);
+    if (provider === 'Select' || !account.trim() || !value) { setMessage('Choose a biller and enter your account and amount.'); return; }
+    if (value > state.balances.usd) { setMessage('Insufficient USD balance for this bill.'); return; }
+    setBusy(true);
+    show('Processing bill payment...');
+    window.setTimeout(() => {
+      setState((current) => ({ ...current, balances: { ...current.balances, usd: current.balances.usd - value }, activities: [{ id: String(Date.now()), title: `${provider} bill payment`, subtitle: `Account ${account}`, amount: value.toFixed(2), currency: 'USD', direction: 'out', date: 'Now', icon: 'bill' }, ...current.activities] }));
+      setBusy(false);
+      hide();
+      setMessage('Bill payment successful.');
+    }, 450);
+  };
+  return <ServiceShell title="Bill payment" state={state}><main className="flex flex-1 flex-col px-8 pt-5"><div className="rounded-2xl bg-[#f8edf3] px-4 py-3 text-left"><p className="text-[13px] font-bold uppercase tracking-wide text-[#a71958]">Pay a bill</p><p className="mt-1 text-[13px] leading-5 text-[#6f5967]">Pay a supported service directly from your USD wallet.</p></div><div className="mt-7 space-y-6"><SelectPill label="select biller" value={provider} options={['Select', 'Internet', 'Water', 'Cable TV']} onChange={(value) => { setProvider(value); setMessage(''); }}/><RoundedInput label="account or customer number" value={account} onChange={setAccount} placeholder="Enter account number"/><RoundedInput label="Amount (USD)" type="number" value={amount} onChange={setAmount} placeholder="0.00"/><SelectPill label="from account" value="USD wallet" options={['USD wallet']} disabled/></div><div className="mt-auto space-y-4 pb-4 pt-10"><ServiceActions primary={busy ? 'processing...' : 'pay now'} onPrimary={submit} primaryDisabled={busy}/>{message && <p role="status" className={`text-center text-[13px] font-semibold ${message.endsWith('successful.') ? 'text-[#075541]' : 'text-[#a71958]'}`}>{message}</p>}<ServiceFooter/></div></main></ServiceShell>;
 }
 
 function KashPage({ state }: { state: AppState }) {
@@ -270,11 +380,11 @@ function EmptyCollectionPage({ state, title, heading, emptyText, action }: { sta
 
 function AppRoutes() {
   const [state, setState] = useAppState();
-  return <QueryClientProvider client={queryClient}><TooltipProvider><Switch><Route path="/" component={Splash}/><Route path="/welcome" component={Welcome}/><Route path="/login">{() => <Login setState={setState}/>}</Route><Route path="/pin">{() => <PinPage setState={setState}/>}</Route><Route path="/home">{() => state.authenticated ? <Home state={state}/> : <Login setState={setState}/>}</Route><Route path="/transfers">{() => state.authenticated ? <TransferPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/send">{() => state.authenticated ? <SendPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/account">{() => state.authenticated ? <AccountPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/options">{() => state.authenticated ? <OptionsPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/fees" component={() => <FeesPage/>}/><Route path="/notifications" component={NotificationsPage}/><Route path="/profile">{() => state.authenticated ? <ProfilePage state={state}/> : <Login setState={setState}/>}</Route><Route path="/faqs" component={() => <SimplePage title="Faqs" icon={CircleHelp}>Frequently asked questions will appear here.</SimplePage>}/><Route path="/agents" component={() => <SimplePage title="Agent location" icon={Search}>Agent locations will appear here when location services are connected.</SimplePage>}/><Route path="/merchants" component={() => <SimplePage title="Merchant location" icon={Search}>Merchant locations will appear here when location services are connected.</SimplePage>}/><Route path="/kash">{() => state.authenticated ? <KashPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/kgo-pay">{() => state.authenticated ? <KgoPayPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/lec">{() => state.authenticated ? <LECPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/data">{() => state.authenticated ? <TopUpPage state={state} title="data purchase"/> : <Login setState={setState}/>}</Route><Route path="/airtime">{() => state.authenticated ? <TopUpPage state={state} title="airtime purchase" airtime/> : <Login setState={setState}/>}</Route><Route path="/gift-cards">{() => state.authenticated ? <EmptyCollectionPage state={state} title="Gift Kard" heading="Gift Kard" emptyText="No gift card found" action="Create Gift Kard"/> : <Login setState={setState}/>}</Route><Route path="/vouchers">{() => state.authenticated ? <EmptyCollectionPage state={state} title="Kola Voucher" heading="Kola Voucher" emptyText="No voucher found" action="REGISTER A VOUCHER"/> : <Login setState={setState}/>}</Route><Route path="/donations">{() => state.authenticated ? <EmptyCollectionPage state={state} title="donation" heading="My Donations" emptyText="No donations found" action="DONATE"/> : <Login setState={setState}/>}</Route><Route path="/merchant" component={() => <SimplePage title="Merchant Payment" icon={Receipt}>Merchant payment services will appear here when connected.</SimplePage>}/><Route path="/pay" component={() => <SimplePage title="Bill payment" icon={Receipt}>Bill payment services will appear here when connected.</SimplePage>}/><Route component={NotFound}/></Switch><Toaster/></TooltipProvider></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><TooltipProvider><Switch><Route path="/" component={Splash}/><Route path="/welcome" component={Welcome}/><Route path="/enrollment">{() => <EnrollmentRoute setState={setState}/>}</Route><Route path="/login">{() => <Login setState={setState}/>}</Route><Route path="/pin">{() => <PinPage state={state} setState={setState}/>}</Route><Route path="/home">{() => state.authenticated ? <Home state={state}/> : <Login setState={setState}/>}</Route><Route path="/transfers">{() => state.authenticated ? <TransferPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/send">{() => state.authenticated ? <SendPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/account">{() => state.authenticated ? <AccountPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/options">{() => state.authenticated ? <OptionsPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/fees" component={() => <FeesPage/>}/><Route path="/notifications" component={NotificationsPage}/><Route path="/profile">{() => state.authenticated ? <ProfilePage state={state}/> : <Login setState={setState}/>}</Route><Route path="/faqs" component={() => <SimplePage title="Faqs" icon={CircleHelp}>Frequently asked questions will appear here.</SimplePage>}/><Route path="/agents" component={() => <SimplePage title="Agent location" icon={Search}>Agent locations will appear here when location services are connected.</SimplePage>}/><Route path="/merchants" component={() => <SimplePage title="Merchant location" icon={Search}>Merchant locations will appear here when location services are connected.</SimplePage>}/><Route path="/kash">{() => state.authenticated ? <KashPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/kgo-pay">{() => state.authenticated ? <KgoPayPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/lec">{() => state.authenticated ? <LECPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/data">{() => state.authenticated ? <TopUpPage state={state} setState={setState} title="data purchase"/> : <Login setState={setState}/>}</Route><Route path="/airtime">{() => state.authenticated ? <TopUpPage state={state} setState={setState} title="airtime purchase" airtime/> : <Login setState={setState}/>}</Route><Route path="/gift-cards">{() => state.authenticated ? <EmptyCollectionPage state={state} title="Gift Kard" heading="Gift Kard" emptyText="No gift card found" action="Create Gift Kard"/> : <Login setState={setState}/>}</Route><Route path="/vouchers">{() => state.authenticated ? <EmptyCollectionPage state={state} title="Kola Voucher" heading="Kola Voucher" emptyText="No voucher found" action="REGISTER A VOUCHER"/> : <Login setState={setState}/>}</Route><Route path="/donations">{() => state.authenticated ? <EmptyCollectionPage state={state} title="donation" heading="My Donations" emptyText="No donations found" action="DONATE"/> : <Login setState={setState}/>}</Route><Route path="/merchant" component={() => <SimplePage title="Merchant Payment" icon={Receipt}>Merchant payment services will appear here when connected.</SimplePage>}/><Route path="/pay">{() => state.authenticated ? <BillPaymentPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route component={NotFound}/></Switch><Toaster/></TooltipProvider></QueryClientProvider>;
 }
 
 export default function AppWithBoundary() {
-  return <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RoutedBoundary/></WouterRouter>;
+  return <GlobalLoadingProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RoutedBoundary/></WouterRouter></GlobalLoadingProvider>;
 }
 
 function RoutedBoundary() {
