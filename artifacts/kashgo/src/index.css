@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -29,28 +29,27 @@
 }
 
 :root {
-  --background: 39 43% 95%;
-  --foreground: 205 28% 17%;
-  --border: 37 27% 83%;
-  --input: 37 22% 78%;
-  --ring: 337 57% 31%;
-  --card: 42 48% 99%;
-  --card-foreground: 205 28% 17%;
-  --primary: 337 57% 31%;
-  --primary-foreground: 42 48% 99%;
-  --secondary: 161 45% 24%;
-  --secondary-foreground: 42 48% 99%;
-  --muted: 39 31% 89%;
-  --muted-foreground: 205 12% 45%;
-  --accent: 41 72% 61%;
-  --accent-foreground: 205 28% 17%;
-  --destructive: 3 60% 43%;
-  --destructive-foreground: 42 48% 99%;
+  --background: 36 38% 96%;
+  --foreground: 245 26% 18%;
+  --border: 34 22% 86%;
+  --input: 34 22% 82%;
+  --ring: 331 72% 39%;
+  --card: 0 0% 100%;
+  --card-foreground: 245 26% 18%;
+  --primary: 331 72% 39%;
+  --primary-foreground: 36 38% 98%;
+  --secondary: 156 59% 22%;
+  --secondary-foreground: 36 38% 98%;
+  --muted: 35 26% 91%;
+  --muted-foreground: 245 11% 47%;
+  --accent: 157 55% 87%;
+  --accent-foreground: 156 59% 22%;
+  --destructive: 1 68% 47%;
+  --destructive-foreground: 0 0% 100%;
   --app-font-sans: 'DM Sans', ui-sans-serif, sans-serif;
   --app-font-mono: 'Space Mono', ui-monospace, monospace;
-  --font-display: 'Fraunces', Georgia, serif;
-  --radius: 1.25rem;
-  --shadow-soft: 0 18px 45px rgba(70, 46, 33, .10);
+  --radius: 1.15rem;
+  --shadow-soft: 0 18px 45px rgba(57, 32, 52, .08);
 }
 
 * { box-sizing: border-box; }
@@ -66,23 +65,13 @@ body {
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 .font-mono { font-family: var(--app-font-mono); }
-.font-display { font-family: var(--font-display); }
-.focus-ring:focus-visible,
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid hsl(var(--accent));
-  outline-offset: 3px;
-}
 .app-grain::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 50;
   pointer-events: none;
-  opacity: .028;
+  opacity: .035;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
 }
 .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
@@ -92,6 +81,5 @@ textarea:focus-visible {
 .delay-2 { animation-delay: .16s; }
 .delay-3 { animation-delay: .24s; }
 .delay-4 { animation-delay: .32s; }
-.delay-5 { animation-delay: .4s; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
