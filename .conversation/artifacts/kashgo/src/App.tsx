@@ -3,9 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, Bell, Check, ChevronRight, CircleHelp, Eye,
   EyeOff, Gift, HandHeart, Heart, House, Landmark, LogOut, Menu, Phone, Receipt,
-  Search, Send, Settings, Share2, ShieldCheck, Smartphone, UserRound, WalletCards,
+  Search, Send, Settings, Share2, ShieldCheck, Smartphone, UserRound, WalletCards, History, Link2,
   Globe2,
-  Wifi, X, Zap,
+  Wifi, X, Zap, PlusCircle,
 } from 'lucide-react';
 import { Link, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -15,6 +15,18 @@ import NotFound from '@/pages/not-found';
 import { Enrollment, emptyRegistration, type RegistrationData } from './registration';
 import { GlobalLoadingProvider, LoadingPanel, useGlobalLoading } from './loading';
 import kashGoLogo from '@assets/file_000000002c188210ae4b70614805037f_1788985542244.png';
+import {
+  AccountMenuPage,
+  AccountVerificationPage,
+  ChangePasswordPage,
+  CustomerSupportPage,
+  PlaceholderFeaturePage,
+  PreferencesPage,
+  ThemePage,
+  TransactionLimitsPage,
+  VerifyEmailPage,
+  WalletTopUpPage,
+} from './account-features';
 
 const queryClient = new QueryClient();
 const STORAGE_KEY = 'kashgo-state-v3';
@@ -38,6 +50,11 @@ type AppState = {
   hideBalance: boolean;
   notifications: boolean;
   biometrics: boolean;
+  screenLock: boolean;
+  theme: 'System' | 'Light' | 'Dark';
+  language: 'English' | 'French';
+  emailVerified: boolean;
+  identityVerified: boolean;
   activities: Activity[];
   balances: { usd: number; lrd: number };
   registration: RegistrationData;
@@ -51,6 +68,11 @@ const emptyState: AppState = {
   hideBalance: false,
   notifications: true,
   biometrics: false,
+  screenLock: false,
+  theme: 'System',
+  language: 'English',
+  emailVerified: false,
+  identityVerified: false,
   activities: [],
   balances: { usd: 0, lrd: 0 },
   registration: emptyRegistration,
@@ -195,7 +217,7 @@ function PinPage({ state, setState }: { state: AppState; setState: React.Dispatc
 
 function Home({ state }: { state: AppState }) {
   const [, setLocation] = useLocation();
-  return <Shell title="Home" active="Home" balance menu><main className="bg-white px-7 pt-4 text-center"><h2 className="text-[20px] font-bold text-[#a51d5a]">welcome to KashGo</h2><div className="mt-3 grid grid-cols-2 gap-3">{[{ label: 'Kash', icon: WalletCards, href: '/kash' }, { label: 'Gift Card', icon: Gift, href: '/gift-cards' }, { label: 'Vouchers', icon: Receipt, href: '/vouchers' }, { label: 'KGO Pay', icon: Smartphone, href: '/kgo-pay' }, { label: 'donation', icon: HandHeart, href: '/donations' }].map(({ label, icon: Icon, href }) => <Link key={label} href={href} className="flex h-[102px] flex-col items-center justify-center gap-2 rounded-[14px] border border-[#555] text-[14px] font-bold text-[#4d4d4d]"><Icon size={42} strokeWidth={2.1}/><span>{label}</span></Link>)}</div><div className="no-scrollbar mt-9 flex gap-3 overflow-x-auto pb-4 text-[#8f164a]">{[{ label: 'LEC', href: '/lec' }, { label: 'Data', href: '/data' }, { label: 'Airtime', href: '/airtime' }, { label: 'Merchant', href: '/merchant' }].map(({ label, href }) => <button key={label} onClick={() => setLocation(href)} className="flex min-w-[108px] flex-col items-center justify-center gap-2 rounded-[14px] border border-[#8f164a] py-4 text-[14px] font-bold"><Zap size={24}/><span>{label}</span></button>)}</div>{state.activities.length === 0 && <p className="mt-3 text-[13px] text-[#777]">Your recent activity will appear here.</p>}</main></Shell>;
+  return <Shell title="Home" active="Home" balance menu><main className="bg-white px-7 pt-4 text-center"><h2 className="text-[20px] font-bold text-[#a51d5a]">welcome to KashGo</h2><div className="mt-3 grid grid-cols-2 gap-3">{[{ label: 'Kash', icon: WalletCards, href: '/kash' }, { label: 'Gift Card', icon: Gift, href: '/gift-cards' }, { label: 'Vouchers', icon: Receipt, href: '/vouchers' }, { label: 'KGO Pay', icon: Smartphone, href: '/kgo-pay' }, { label: 'Donation', icon: HandHeart, href: '/donations' }, { label: 'Top up', icon: PlusCircle, href: '/top-up' }].map(({ label, icon: Icon, href }) => <Link key={label} href={href} className="flex h-[102px] flex-col items-center justify-center gap-2 rounded-[14px] border border-[#555] text-[14px] font-bold text-[#4d4d4d]"><Icon size={42} strokeWidth={2.1}/><span>{label}</span></Link>)}</div><div className="no-scrollbar mt-9 flex gap-3 overflow-x-auto pb-4 text-[#8f164a]">{[{ label: 'LEC', href: '/lec' }, { label: 'Data', href: '/data' }, { label: 'Airtime', href: '/airtime' }, { label: 'Merchant', href: '/merchant' }].map(({ label, href }) => <button key={label} onClick={() => setLocation(href)} className="flex min-w-[108px] flex-col items-center justify-center gap-2 rounded-[14px] border border-[#8f164a] py-4 text-[14px] font-bold"><Zap size={24}/><span>{label}</span></button>)}</div>{state.activities.length === 0 && <p className="mt-3 text-[13px] text-[#777]">Your recent activity will appear here.</p>}</main></Shell>;
 }
 
 function BalanceAndSection({ state, title, children }: { state: AppState; title: string; children: ReactNode }) {
@@ -380,7 +402,11 @@ function EmptyCollectionPage({ state, title, heading, emptyText, action }: { sta
 
 function AppRoutes() {
   const [state, setState] = useAppState();
-  return <QueryClientProvider client={queryClient}><TooltipProvider><Switch><Route path="/" component={Splash}/><Route path="/welcome" component={Welcome}/><Route path="/enrollment">{() => <EnrollmentRoute setState={setState}/>}</Route><Route path="/login">{() => <Login setState={setState}/>}</Route><Route path="/pin">{() => <PinPage state={state} setState={setState}/>}</Route><Route path="/home">{() => state.authenticated ? <Home state={state}/> : <Login setState={setState}/>}</Route><Route path="/transfers">{() => state.authenticated ? <TransferPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/send">{() => state.authenticated ? <SendPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/account">{() => state.authenticated ? <AccountPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/options">{() => state.authenticated ? <OptionsPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/fees" component={() => <FeesPage/>}/><Route path="/notifications" component={NotificationsPage}/><Route path="/profile">{() => state.authenticated ? <ProfilePage state={state}/> : <Login setState={setState}/>}</Route><Route path="/faqs" component={() => <SimplePage title="Faqs" icon={CircleHelp}>Frequently asked questions will appear here.</SimplePage>}/><Route path="/agents" component={() => <SimplePage title="Agent location" icon={Search}>Agent locations will appear here when location services are connected.</SimplePage>}/><Route path="/merchants" component={() => <SimplePage title="Merchant location" icon={Search}>Merchant locations will appear here when location services are connected.</SimplePage>}/><Route path="/kash">{() => state.authenticated ? <KashPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/kgo-pay">{() => state.authenticated ? <KgoPayPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/lec">{() => state.authenticated ? <LECPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/data">{() => state.authenticated ? <TopUpPage state={state} setState={setState} title="data purchase"/> : <Login setState={setState}/>}</Route><Route path="/airtime">{() => state.authenticated ? <TopUpPage state={state} setState={setState} title="airtime purchase" airtime/> : <Login setState={setState}/>}</Route><Route path="/gift-cards">{() => state.authenticated ? <EmptyCollectionPage state={state} title="Gift Kard" heading="Gift Kard" emptyText="No gift card found" action="Create Gift Kard"/> : <Login setState={setState}/>}</Route><Route path="/vouchers">{() => state.authenticated ? <EmptyCollectionPage state={state} title="Kola Voucher" heading="Kola Voucher" emptyText="No voucher found" action="REGISTER A VOUCHER"/> : <Login setState={setState}/>}</Route><Route path="/donations">{() => state.authenticated ? <EmptyCollectionPage state={state} title="donation" heading="My Donations" emptyText="No donations found" action="DONATE"/> : <Login setState={setState}/>}</Route><Route path="/merchant" component={() => <SimplePage title="Merchant Payment" icon={Receipt}>Merchant payment services will appear here when connected.</SimplePage>}/><Route path="/pay">{() => state.authenticated ? <BillPaymentPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route component={NotFound}/></Switch><Toaster/></TooltipProvider></QueryClientProvider>;
+  const [, setLocation] = useLocation();
+  const updateFeatureState = (patch: Partial<AppState>) => setState((current) => ({ ...current, ...patch }));
+  const logout = () => { setState((current) => ({ ...current, authenticated: false })); setLocation('/welcome'); };
+  const featureProps = { state, updateState: updateFeatureState, onLogout: logout };
+  return <QueryClientProvider client={queryClient}><TooltipProvider><Switch><Route path="/" component={Splash}/><Route path="/welcome" component={Welcome}/><Route path="/enrollment">{() => <EnrollmentRoute setState={setState}/>}</Route><Route path="/login">{() => <Login setState={setState}/>}</Route><Route path="/pin">{() => <PinPage state={state} setState={setState}/>}</Route><Route path="/home">{() => state.authenticated ? <Home state={state}/> : <Login setState={setState}/>}</Route><Route path="/transfers">{() => state.authenticated ? <TransferPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/send">{() => state.authenticated ? <SendPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/account">{() => state.authenticated ? <AccountMenuPage {...featureProps}/> : <Login setState={setState}/>}</Route><Route path="/options">{() => state.authenticated ? <PreferencesPage {...featureProps}/> : <Login setState={setState}/>}</Route><Route path="/top-up">{() => state.authenticated ? <WalletTopUpPage/> : <Login setState={setState}/>}</Route><Route path="/transaction-limits">{() => state.authenticated ? <TransactionLimitsPage/> : <Login setState={setState}/>}</Route><Route path="/change-password">{() => state.authenticated ? <ChangePasswordPage/> : <Login setState={setState}/>}</Route><Route path="/customer-support" component={CustomerSupportPage}/><Route path="/verify-email">{() => state.authenticated ? <VerifyEmailPage {...featureProps}/> : <Login setState={setState}/>}</Route><Route path="/account-verification">{() => state.authenticated ? <AccountVerificationPage {...featureProps}/> : <Login setState={setState}/>}</Route><Route path="/theme">{() => state.authenticated ? <ThemePage {...featureProps}/> : <Login setState={setState}/>}</Route><Route path="/linked-accounts" component={() => <PlaceholderFeaturePage title="Linked Accounts" icon={Link2}>Connect a bank, mobile money wallet, or card when payment integrations are enabled.</PlaceholderFeaturePage>}/><Route path="/balance-history" component={() => <PlaceholderFeaturePage title="Balance History" icon={History}>Your completed wallet activity will appear here.</PlaceholderFeaturePage>}/><Route path="/privacy-policy" component={() => <PlaceholderFeaturePage title="Privacy Policy" icon={ShieldCheck}>KashGo keeps customer information private and only uses it to provide wallet services.</PlaceholderFeaturePage>}/><Route path="/terms" component={() => <PlaceholderFeaturePage title="Terms & Conditions" icon={ShieldCheck}>By using KashGo, you agree to review the terms that govern wallet services.</PlaceholderFeaturePage>}/><Route path="/fees" component={() => <FeesPage/>}/><Route path="/notifications" component={NotificationsPage}/><Route path="/profile">{() => state.authenticated ? <ProfilePage state={state}/> : <Login setState={setState}/>}</Route><Route path="/faqs" component={() => <SimplePage title="Faqs" icon={CircleHelp}>Frequently asked questions will appear here.</SimplePage>}/><Route path="/agents" component={() => <SimplePage title="Agent location" icon={Search}>Agent locations will appear here when location services are connected.</SimplePage>}/><Route path="/merchants" component={() => <SimplePage title="Merchant location" icon={Search}>Merchant locations will appear here when location services are connected.</SimplePage>}/><Route path="/kash">{() => state.authenticated ? <KashPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/kgo-pay">{() => state.authenticated ? <KgoPayPage state={state}/> : <Login setState={setState}/>}</Route><Route path="/lec">{() => state.authenticated ? <LECPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route path="/data">{() => state.authenticated ? <TopUpPage state={state} setState={setState} title="data purchase"/> : <Login setState={setState}/>}</Route><Route path="/airtime">{() => state.authenticated ? <TopUpPage state={state} setState={setState} title="airtime purchase" airtime/> : <Login setState={setState}/>}</Route><Route path="/gift-cards">{() => state.authenticated ? <EmptyCollectionPage state={state} title="Gift Kard" heading="Gift Kard" emptyText="No gift card found" action="Create Gift Kard"/> : <Login setState={setState}/>}</Route><Route path="/vouchers">{() => state.authenticated ? <EmptyCollectionPage state={state} title="Kola Voucher" heading="Kola Voucher" emptyText="No voucher found" action="REGISTER A VOUCHER"/> : <Login setState={setState}/>}</Route><Route path="/donations">{() => state.authenticated ? <EmptyCollectionPage state={state} title="donation" heading="My Donations" emptyText="No donations found" action="DONATE"/> : <Login setState={setState}/>}</Route><Route path="/merchant" component={() => <SimplePage title="Merchant Payment" icon={Receipt}>Merchant payment services will appear here when connected.</SimplePage>}/><Route path="/pay">{() => state.authenticated ? <BillPaymentPage state={state} setState={setState}/> : <Login setState={setState}/>}</Route><Route component={NotFound}/></Switch><Toaster/></TooltipProvider></QueryClientProvider>;
 }
 
 export default function AppWithBoundary() {
