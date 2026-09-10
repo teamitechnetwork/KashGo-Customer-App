@@ -41,9 +41,9 @@ export type FeatureProps = {
 function FeatureShell({ children, title, onBack, close = false }: { children: ReactNode; title?: string; onBack?: () => void; close?: boolean }) {
   const [, setLocation] = useLocation();
   return (
-    <main className="app-shell min-h-[100dvh] overflow-x-hidden bg-[#151319] text-white">
+    <main className="app-shell min-h-[100dvh] overflow-x-hidden bg-white text-[#242127]">
       <header className="flex items-center justify-between px-5 pb-4 pt-5">
-        <button type="button" onClick={onBack ?? (() => setLocation('/home'))} className="grid h-10 w-10 place-items-center text-white" aria-label={close ? 'Close' : 'Go back'}>
+        <button type="button" onClick={onBack ?? (() => setLocation('/home'))} className="grid h-10 w-10 place-items-center text-[#242127]" aria-label={close ? 'Close' : 'Go back'}>
           {close ? <X size={30} strokeWidth={1.4} /> : <ArrowLeft size={30} strokeWidth={1.7} />}
         </button>
         {title && <h1 className="text-[20px] font-semibold">{title}</h1>}
@@ -70,14 +70,14 @@ function ProfileHero({ state }: { state: AccountFeatureState }) {
 }
 
 function SectionTitle({ children }: { children: ReactNode }) {
-  return <h2 className="bg-[#252329] px-5 py-3 text-[17px] font-semibold text-[#c9c6cc]">{children}</h2>;
+  return <h2 className="bg-[#f1eef0] px-5 py-3 text-[17px] font-semibold text-[#5b5560]">{children}</h2>;
 }
 
 function MenuRow({ label, value, badge, onClick, danger = false }: { label: string; value?: string; badge?: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className="flex min-h-[68px] w-full items-center justify-between gap-3 border-b border-[#514d55] px-5 text-left transition hover:bg-white/[.04]">
+    <button type="button" onClick={onClick} className="flex min-h-[68px] w-full items-center justify-between gap-3 border-b border-[#e1dce1] px-5 text-left transition hover:bg-[#fcf8fa]">
       <span className={danger ? 'text-[#e53b46]' : 'text-[17px]'}>{label}</span>
-      <span className="flex items-center gap-3 text-[#bdb9c2]">
+      <span className="flex items-center gap-3 text-[#77717b]">
         {badge && <span className={`rounded-full px-3 py-1 text-[13px] ${badge === 'Not verified' ? 'bg-[#f4edf0] text-[#a13d4b]' : 'bg-[#142b4f] text-[#4188e8]'}`}>{badge}</span>}
         {value && <span className="text-[16px]">{value}</span>}
         <ChevronRight size={23} strokeWidth={1.6} />
@@ -88,12 +88,12 @@ function MenuRow({ label, value, badge, onClick, danger = false }: { label: stri
 
 function ToggleRow({ label, detail, value, onChange }: { label: string; detail: string; value: boolean; onChange: () => void }) {
   return (
-    <button type="button" onClick={onChange} className="flex min-h-[76px] w-full items-center justify-between border-b border-[#514d55] px-5 text-left">
+    <button type="button" onClick={onChange} className="flex min-h-[76px] w-full items-center justify-between border-b border-[#e1dce1] px-5 text-left">
       <span>
         <span className="block text-[17px]">{label}</span>
-        <span className="mt-1 block text-[14px] text-[#aaa6af]">{detail}</span>
+        <span className="mt-1 block text-[14px] text-[#77717b]">{detail}</span>
       </span>
-      <span className={`relative h-7 w-12 rounded-full transition ${value ? 'bg-[#b71362]' : 'bg-[#3e3c44]'}`} aria-label={`${label} ${value ? 'on' : 'off'}`}>
+      <span className={`relative h-7 w-12 rounded-full transition ${value ? 'bg-[#b71362]' : 'bg-[#d5d0d5]'}`} aria-label={`${label} ${value ? 'on' : 'off'}`}>
         <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${value ? 'left-6' : 'left-1'}`} />
       </span>
     </button>
@@ -135,8 +135,8 @@ export function AccountMenuContent({ state, updateState, onLogout }: FeatureProp
       <MenuRow label="Customer Support" onClick={() => setLocation('/customer-support')} />
       <MenuRow label="Share App" onClick={share} />
       <MenuRow label="Log Out" danger onClick={onLogout} />
-      {notice && <p role="status" className="mx-5 mt-4 rounded-xl bg-[#252329] px-4 py-3 text-center text-[13px] text-[#d8d4dc]">{notice}</p>}
-      <p className="mt-7 text-center text-[13px] text-[#9b98a1]">KashGo customer</p>
+      {notice && <p role="status" className="mx-5 mt-4 rounded-xl bg-[#f7edf3] px-4 py-3 text-center text-[13px] text-[#a71958]">{notice}</p>}
+      <p className="mt-7 text-center text-[13px] text-[#8b858e]">KashGo customer</p>
     </div>
   );
 }
@@ -174,7 +174,7 @@ export function TransactionLimitsPage() {
       <div className="flex min-h-[calc(100dvh-78px)] items-end bg-black/20">
         <div className="w-full rounded-t-[30px] bg-[#f2f0f1] px-6 pb-10 pt-7 text-[#242127]">
           <div className="flex rounded-xl border border-[#c5c1c6] bg-white p-1">
-            {tabs.map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`h-11 flex-1 rounded-lg text-[14px] ${tab === item ? 'bg-[#343139] text-white' : 'text-[#77727c]'}`}>{item}</button>)}
+            {tabs.map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`h-11 flex-1 rounded-lg text-[14px] ${tab === item ? 'bg-[#f7edf3] text-[#a71958]' : 'text-[#77727c]'}`}>{item}</button>)}
           </div>
           <div className="mt-12 space-y-8">
             <div className="flex items-center justify-between gap-4 text-[17px]"><span>Max transaction amount</span><span>{limits.max}</span></div>
@@ -214,17 +214,17 @@ export function CustomerSupportPage() {
   return (
     <FeatureShell title="Customer Support">
       <div className="px-6 pb-10 pt-4">
-        <div className="rounded-[18px] border border-[#6661a9] bg-[#1b1c47] px-5 py-4">
-          <div className="flex items-center gap-4 text-[#c9c8f4]"><Clock3 size={28} /><span className="text-[16px] font-semibold">Working Hours</span></div>
+        <div className="rounded-[18px] border border-[#d7c7e4] bg-[#f4effa] px-5 py-4">
+          <div className="flex items-center gap-4 text-[#8f164a]"><Clock3 size={28} /><span className="text-[16px] font-semibold">Working Hours</span></div>
           <div className="mt-4 flex justify-between text-[17px] font-semibold"><span>Monday - Friday</span><span>09:00 – 17:00</span></div>
-          <p className="mt-3 text-[13px] text-[#c9c8f4]">All times shown in GMT.</p>
+          <p className="mt-3 text-[13px] text-[#77717b]">All times shown in GMT.</p>
         </div>
-        <div className="mt-5 rounded-[20px] border border-[#403d46] p-4">
-          <a href="tel:+23177333330" className="flex items-center gap-4 rounded-2xl bg-[#252329] p-4"><Phone size={28} /><span><b className="block text-[16px]">Call us</b><span className="text-[#aaa6af]">+231 77 333 330</span></span><ChevronRight className="ml-auto" /></a>
-          <a href="https://wa.me/23177333330" target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-4 rounded-2xl bg-[#252329] p-4"><MessageCircle size={28} /><span><b className="block text-[16px]">Let's chat on WhatsApp</b><span className="text-[#aaa6af]">+231 77 333 330</span></span><ChevronRight className="ml-auto" /></a>
-          <a href="mailto:support@kashgo.com" className="mt-3 flex items-center gap-4 rounded-2xl bg-[#252329] p-4"><Mail size={28} /><span><b className="block text-[16px]">Email us</b><span className="text-[#aaa6af]">support@kashgo.com</span></span><ChevronRight className="ml-auto" /></a>
-          <div className="my-4 border-t border-[#5a5660]" />
-          <Link href="/terms" className="flex items-center gap-4 rounded-2xl bg-[#252329] p-4"><FileText size={28} /><b className="text-[16px]">Terms & Conditions</b><ChevronRight className="ml-auto" /></Link>
+        <div className="mt-5 rounded-[20px] border border-[#e1dce1] p-4">
+          <a href="tel:+23177333330" className="flex items-center gap-4 rounded-2xl bg-[#f7f4f6] p-4"><Phone size={28} className="text-[#8f164a]" /><span><b className="block text-[16px]">Call us</b><span className="text-[#77717b]">+231 77 333 330</span></span><ChevronRight className="ml-auto text-[#77717b]" /></a>
+          <a href="https://wa.me/23177333330" target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-4 rounded-2xl bg-[#f7f4f6] p-4"><MessageCircle size={28} className="text-[#8f164a]" /><span><b className="block text-[16px]">Let's chat on WhatsApp</b><span className="text-[#77717b]">+231 77 333 330</span></span><ChevronRight className="ml-auto text-[#77717b]" /></a>
+          <a href="mailto:support@kashgo.com" className="mt-3 flex items-center gap-4 rounded-2xl bg-[#f7f4f6] p-4"><Mail size={28} className="text-[#8f164a]" /><span><b className="block text-[16px]">Email us</b><span className="text-[#77717b]">support@kashgo.com</span></span><ChevronRight className="ml-auto text-[#77717b]" /></a>
+          <div className="my-4 border-t border-[#e1dce1]" />
+          <Link href="/terms" className="flex items-center gap-4 rounded-2xl bg-[#f7f4f6] p-4"><FileText size={28} className="text-[#8f164a]" /><b className="text-[16px]">Terms & Conditions</b><ChevronRight className="ml-auto text-[#77717b]" /></Link>
         </div>
       </div>
     </FeatureShell>
@@ -264,18 +264,18 @@ export function WalletTopUpPage() {
 export function VerifyEmailPage({ state, updateState }: FeatureProps) {
   const [email, setEmail] = useState(state.email);
   const [message, setMessage] = useState('');
-  return <FeatureShell title="Verify your email"><div className="px-6 pt-8"><Mail className="mx-auto text-[#e21c2b]" size={62} /><h2 className="mt-6 text-center text-[23px] font-semibold">Verify your email</h2><p className="mt-3 text-center text-[#aaa6af]">Add an email address to receive account notices and recovery links.</p><input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="you@example.com" className="mt-8 h-14 w-full rounded-2xl border border-[#817e87] bg-transparent px-5 text-white outline-none" /><button type="button" onClick={() => { if (!email.includes('@')) return setMessage('Enter a valid email address.'); updateState({ email, emailVerified: true }); setMessage('Verification request is ready.'); }} className="mt-5 h-14 w-full rounded-full bg-[#e21c2b] font-bold">Send verification email</button>{message && <p className="mt-5 text-center text-[13px] text-[#c9c6cc]">{message}</p>}</div></FeatureShell>;
+  return <FeatureShell title="Verify your email"><div className="px-6 pt-8"><Mail className="mx-auto text-[#e21c2b]" size={62} /><h2 className="mt-6 text-center text-[23px] font-semibold">Verify your email</h2><p className="mt-3 text-center text-[#77717b]">Add an email address to receive account notices and recovery links.</p><input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="you@example.com" className="mt-8 h-14 w-full rounded-2xl border border-[#d6cbd1] bg-white px-5 text-[#242127] outline-none" /><button type="button" onClick={() => { if (!email.includes('@')) return setMessage('Enter a valid email address.'); updateState({ email, emailVerified: true }); setMessage('Verification request is ready.'); }} className="mt-5 h-14 w-full rounded-full bg-[#e21c2b] font-bold text-white">Send verification email</button>{message && <p className="mt-5 text-center text-[13px] text-[#77717b]">{message}</p>}</div></FeatureShell>;
 }
 
 export function AccountVerificationPage({ state, updateState }: FeatureProps) {
-  return <FeatureShell title="Account Verification"><div className="px-6 pt-8 text-center"><UserCheck className="mx-auto text-[#3b87ec]" size={66} /><h2 className="mt-6 text-[23px] font-semibold">Verify your account</h2><p className="mt-3 text-[#aaa6af]">Complete identity verification to unlock higher transaction limits.</p><button type="button" onClick={() => updateState({ identityVerified: true })} disabled={state.identityVerified} className="mt-8 h-14 w-full rounded-full bg-[#075541] font-bold disabled:opacity-60">{state.identityVerified ? 'Account verified' : 'Start verification'}</button></div></FeatureShell>;
+  return <FeatureShell title="Account Verification"><div className="px-6 pt-8 text-center"><UserCheck className="mx-auto text-[#3b87ec]" size={66} /><h2 className="mt-6 text-[23px] font-semibold">Verify your account</h2><p className="mt-3 text-[#77717b]">Complete identity verification to unlock higher transaction limits.</p><button type="button" onClick={() => updateState({ identityVerified: true })} disabled={state.identityVerified} className="mt-8 h-14 w-full rounded-full bg-[#075541] font-bold text-white disabled:opacity-60">{state.identityVerified ? 'Account verified' : 'Start verification'}</button></div></FeatureShell>;
 }
 
 export function ThemePage({ state, updateState }: FeatureProps) {
   const options: AccountFeatureState['theme'][] = ['System', 'Light', 'Dark'];
-  return <FeatureShell title="Choose a theme"><div className="px-5 pt-6">{options.map((option) => <button key={option} type="button" onClick={() => updateState({ theme: option })} className="flex w-full items-center justify-between border-b border-[#514d55] py-5 text-left text-[17px]">{option}<span className={`grid h-6 w-6 place-items-center rounded-full border ${state.theme === option ? 'border-[#b71362] bg-[#b71362]' : 'border-[#817e87]'}`}>{state.theme === option && <Check size={15} />}</span></button>)}</div></FeatureShell>;
+  return <FeatureShell title="Choose a theme"><div className="px-5 pt-6">{options.map((option) => <button key={option} type="button" onClick={() => updateState({ theme: option })} className="flex w-full items-center justify-between border-b border-[#e1dce1] py-5 text-left text-[17px]">{option}<span className={`grid h-6 w-6 place-items-center rounded-full border ${state.theme === option ? 'border-[#b71362] bg-[#b71362]' : 'border-[#b9b1ba]'}`}>{state.theme === option && <Check size={15} className="text-white" />}</span></button>)}</div></FeatureShell>;
 }
 
 export function PlaceholderFeaturePage({ title, icon: Icon, children }: { title: string; icon: typeof History; children: ReactNode }) {
-  return <FeatureShell title={title}><div className="px-6 pt-12 text-center"><Icon className="mx-auto text-[#b71362]" size={64} /><h2 className="mt-6 text-[24px] font-semibold">{title}</h2><p className="mt-3 text-[#aaa6af]">{children}</p></div></FeatureShell>;
+  return <FeatureShell title={title}><div className="px-6 pt-12 text-center"><Icon className="mx-auto text-[#b71362]" size={64} /><h2 className="mt-6 text-[24px] font-semibold">{title}</h2><p className="mt-3 text-[#77717b]">{children}</p></div></FeatureShell>;
 }

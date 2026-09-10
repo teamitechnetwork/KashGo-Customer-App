@@ -131,7 +131,7 @@ function MenuDrawer({ close, state, updateState }: { close: () => void; state: A
   const [, setLocation] = useLocation();
   const logout = () => { close(); setStateFromDrawer({ authenticated: false }); setLocation('/welcome'); };
   const setStateFromDrawer = (patch: Partial<AppState>) => updateState(patch);
-  return <div className="fixed inset-0 z-50 bg-black/60" onClick={close}><aside className="h-full w-full max-w-[520px] overflow-y-auto bg-[#151319] shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="flex justify-end px-5 pb-1 pt-5"><button type="button" onClick={close} className="grid h-10 w-10 place-items-center text-white" aria-label="Close navigation"><X size={30} strokeWidth={1.4} /></button></div><AccountMenuContent state={state} updateState={updateState} onLogout={logout} /></aside></div>;
+  return <div className="fixed inset-0 z-50 bg-black/35" onClick={close}><aside className="h-full w-full max-w-[520px] overflow-y-auto bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="flex justify-end px-5 pb-1 pt-5"><button type="button" onClick={close} className="grid h-10 w-10 place-items-center text-[#242127]" aria-label="Close navigation"><X size={30} strokeWidth={1.4} /></button></div><AccountMenuContent state={state} updateState={updateState} onLogout={logout} /></aside></div>;
 }
 
 function Shell({ children, title, active, back = false, balance = false, menu = false }: { children: ReactNode; title: string; active: string; back?: boolean; balance?: boolean; menu?: boolean }) {
