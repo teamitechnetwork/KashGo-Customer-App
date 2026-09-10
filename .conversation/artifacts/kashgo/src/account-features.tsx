@@ -171,13 +171,15 @@ export function TransactionLimitsPage() {
   const limits = tab === 'Receiving' ? { max: '5,000.00 USD', daily: '10,000.00 USD', weekly: '30,000.00 USD', monthly: '60,000.00 USD' } : tab === 'Withdrawal' ? { max: '1,000.00 USD', daily: '3,000.00 USD', weekly: '10,000.00 USD', monthly: '25,000.00 USD' } : { max: '2,000.00 USD', daily: '5,000.00 USD', weekly: '20,000.00 USD', monthly: '30,000.00 USD' };
   return (
     <FeatureShell title="Transaction Limits">
-      <div className="px-6 pb-10 pt-3">
-        <div className="flex rounded-xl border border-[#77747d] bg-[#252329] p-1">
-          {tabs.map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`h-11 flex-1 rounded-lg text-[14px] ${tab === item ? 'bg-[#343139] text-white' : 'text-[#aaa6af]'}`}>{item}</button>)}
-        </div>
-        <div className="mt-14 space-y-8">
-          <div className="flex items-center justify-between gap-4 text-[17px]"><span>Max transaction amount</span><span>{limits.max}</span></div>
-          {[['Number of daily transactions', '0 sent', '5 transactions'], ['Daily amount', '0.00 sent', limits.daily], ['Weekly amount', '0.00 sent', limits.weekly], ['Monthly amount', '0.00 sent', limits.monthly]].map(([label, current, maximum]) => <div key={label}><p className="text-[17px]">{label}</p><div className="mt-5 h-3 rounded-full bg-[#c9c8cb]" /><p className="mt-3 text-right text-[16px]"><span className="text-[#e02737]">{current}</span><span className="text-[#b4b0b9]"> / {maximum}</span></p></div>)}
+      <div className="flex min-h-[calc(100dvh-78px)] items-end bg-black/20">
+        <div className="w-full rounded-t-[30px] bg-[#f2f0f1] px-6 pb-10 pt-7 text-[#242127]">
+          <div className="flex rounded-xl border border-[#c5c1c6] bg-white p-1">
+            {tabs.map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`h-11 flex-1 rounded-lg text-[14px] ${tab === item ? 'bg-[#343139] text-white' : 'text-[#77727c]'}`}>{item}</button>)}
+          </div>
+          <div className="mt-12 space-y-8">
+            <div className="flex items-center justify-between gap-4 text-[17px]"><span>Max transaction amount</span><span>{limits.max}</span></div>
+            {[['Number of daily transactions', '0 sent', '5 transactions'], ['Daily amount', '0.00 sent', limits.daily], ['Weekly amount', '0.00 sent', limits.weekly], ['Monthly amount', '0.00 sent', limits.monthly]].map(([label, current, maximum]) => <div key={label}><p className="text-[17px]">{label}</p><div className="mt-5 h-3 rounded-full bg-[#c9c8cb]" /><p className="mt-3 text-right text-[16px]"><span className="text-[#e02737]">{current}</span><span className="text-[#8a858e]"> / {maximum}</span></p></div>)}
+          </div>
         </div>
       </div>
     </FeatureShell>
@@ -194,13 +196,15 @@ export function ChangePasswordPage() {
   };
   return (
     <FeatureShell title="Change Password">
-      <div className="px-6 pb-8 pt-8">
-        <div className="space-y-6">
-          {[['Old password', 'oldPassword', 'Old password'], ['New password', 'password', 'Password'], ['Confirm new password', 'confirmation', 'Confirm new password']].map(([label, key, placeholder]) => <label key={key} className="block"><span className="mb-2 block text-[17px]">{label} <b className="text-[#e02737]">*</b></span><input type="password" value={values[key as keyof typeof values]} onChange={(event) => { setValues((current) => ({ ...current, [key]: event.target.value })); setMessage(''); }} placeholder={placeholder} className="h-16 w-full rounded-2xl border border-[#817e87] bg-transparent px-5 text-[17px] text-white outline-none focus:border-[#e02737]" /></label>)}
+      <div className="flex min-h-[calc(100dvh-78px)] items-end bg-black/20">
+        <div className="w-full rounded-t-[30px] bg-[#f2f0f1] px-6 pb-8 pt-8 text-[#242127]">
+          <div className="space-y-6">
+            {[['Old password', 'oldPassword', 'Old password'], ['New password', 'password', 'Password'], ['Confirm new password', 'confirmation', 'Confirm new password']].map(([label, key, placeholder]) => <label key={key} className="block"><span className="mb-2 block text-[17px]">{label} <b className="text-[#e02737]">*</b></span><input type="password" value={values[key as keyof typeof values]} onChange={(event) => { setValues((current) => ({ ...current, [key]: event.target.value })); setMessage(''); }} placeholder={placeholder} className="h-16 w-full rounded-2xl border border-[#cbc7ca] bg-white px-5 text-[17px] outline-none focus:border-[#e02737]" /></label>)}
+          </div>
+          {message && <p role="status" className="mt-5 rounded-xl bg-white px-4 py-3 text-center text-[13px] text-[#514b55]">{message}</p>}
+          <button type="button" onClick={submit} className="mt-8 h-16 w-full rounded-full bg-[#e21c2b] text-[18px] font-bold text-white">Change Password</button>
+          <button type="button" onClick={() => setMessage('Password reset link request is ready for the account API.')} className="mt-5 w-full text-right text-[15px] text-[#e43a48]">Forgot password?</button>
         </div>
-        {message && <p role="status" className="mt-5 rounded-xl bg-[#252329] px-4 py-3 text-center text-[13px] text-[#f1eef3]">{message}</p>}
-        <button type="button" onClick={submit} className="mt-8 h-16 w-full rounded-full bg-[#e21c2b] text-[18px] font-bold">Change Password</button>
-        <button type="button" onClick={() => setMessage('Password reset link request is ready for the account API.')} className="mt-5 w-full text-right text-[15px] text-[#e43a48]">Forgot password?</button>
       </div>
     </FeatureShell>
   );
