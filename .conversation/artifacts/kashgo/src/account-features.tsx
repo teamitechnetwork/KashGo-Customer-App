@@ -32,7 +32,7 @@ export type AccountFeatureState = {
   balances: { usd: number; lrd: number };
 };
 
-type FeatureProps = {
+export type FeatureProps = {
   state: AccountFeatureState;
   updateState: (patch: Partial<AccountFeatureState>) => void;
   onLogout: () => void;
@@ -100,7 +100,7 @@ function ToggleRow({ label, detail, value, onChange }: { label: string; detail: 
   );
 }
 
-function AccountMenuContent({ state, updateState, onLogout }: FeatureProps) {
+export function AccountMenuContent({ state, updateState, onLogout }: FeatureProps) {
   const [, setLocation] = useLocation();
   const [notice, setNotice] = useState('');
   const share = async () => {

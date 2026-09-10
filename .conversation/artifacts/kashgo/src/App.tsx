@@ -17,6 +17,7 @@ import { GlobalLoadingProvider, LoadingPanel, useGlobalLoading } from './loading
 import kashGoLogo from '@assets/file_000000002c188210ae4b70614805037f_1788985542244.png';
 import {
   AccountMenuPage,
+  AccountMenuContent,
   AccountVerificationPage,
   ChangePasswordPage,
   CustomerSupportPage,
@@ -126,21 +127,18 @@ function BottomNav({ active }: { active: string }) {
   return <nav className="fixed bottom-0 left-1/2 z-30 flex h-[88px] w-full max-w-[520px] -translate-x-1/2 items-start justify-around bg-white px-4 pt-4 shadow-[0_-8px_24px_rgba(57,32,52,.06)]">{links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`flex flex-col items-center gap-2 text-[13px] ${active === label ? 'font-semibold text-[#8f1649]' : 'text-black'}`}><Icon size={25} strokeWidth={active === label ? 2.8 : 2.5} /><span>{label}</span></Link>)}</nav>;
 }
 
-function MenuDrawer({ close }: { close: () => void }) {
-  const items = [
-    { label: 'Home', href: '/home', icon: House }, { label: 'My Account', href: '/account', icon: WalletCards },
-    { label: 'Options', href: '/options', icon: Settings }, { label: 'Faqs', href: '/faqs', icon: CircleHelp },
-    { label: 'Fees', href: '/fees', icon: WalletCards }, { label: 'Agent location', href: '/agents', icon: Search },
-    { label: 'Merchant location', href: '/merchants', icon: Search }, { label: 'Notifications', href: '/notifications', icon: Bell },
-    { label: 'profile', href: '/profile', icon: UserRound },
-  ];
-  return <div className="fixed inset-0 z-50 bg-black/35" onClick={close}><aside className="flex h-full w-[86%] max-w-[390px] flex-col bg-white px-10 pb-4 pt-16 shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="space-y-7">{items.map(({ label, href, icon: Icon }) => <Link key={label} href={href} onClick={close} className="flex items-center gap-6 text-[17px] text-[#8e274e]"><Icon size={25} fill={label === 'Home' || label === 'My Account' || label === 'Options' || label === 'Notifications' ? 'currentColor' : 'none'} /><span>{label}</span></Link>)}</div><div className="mt-auto text-center"><BrandMark footer /></div></aside></div>;
+function MenuDrawer({ close, state, updateState }: { close: () => void; state: AppState; updateState: (patch: Partial<AppState>) => void }) {
+  const [, setLocation] = useLocation();
+  const logout = () => { close(); setStateFromDrawer({ authenticated: false }); setLocation('/welcome'); };
+  const setStateFromDrawer = (patch: Partial<AppState>) => updateState(patch);
+  return <div className="fixed inset-0 z-50 bg-black/60" onClick={close}><aside className="h-full w-full max-w-[520px] overflow-y-auto bg-[#151319] shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="flex justify-end px-5 pb-1 pt-5"><button type="button" onClick={close} className="grid h-10 w-10 place-items-center text-white" aria-label="Close navigation"><X size={30} strokeWidth={1.4} /></button></div><AccountMenuContent state={state} updateState={updateState} onLogout={logout} /></aside></div>;
 }
 
 function Shell({ children, title, active, back = false, balance = false, menu = false }: { children: ReactNode; title: string; active: string; back?: boolean; balance?: boolean; menu?: boolean }) {
   const [drawer, setDrawer] = useState(false);
-  const [state] = useAppState();
-  return <div className="app-shell min-h-[100dvh] bg-white pb-[88px]"><AppHeader title={title} back={back} onMenu={() => setDrawer(true)} />{balance && <div className="bg-[#e5e5e5] pb-0 pt-0"><BalanceCard state={state} /></div>}{children}<BottomNav active={active}/>{menu && drawer && <MenuDrawer close={() => setDrawer(false)} />}</div>;
+  const [state, setState] = useAppState();
+  const updateState = (patch: Partial<AppState>) => setState((current) => ({ ...current, ...patch }));
+  return <div className="app-shell min-h-[100dvh] bg-white pb-[88px]"><AppHeader title={title} back={back} onMenu={() => setDrawer(true)} />{balance && <div className="bg-[#e5e5e5] pb-0 pt-0"><BalanceCard state={state} /></div>}{children}<BottomNav active={active}/>{menu && drawer && <MenuDrawer state={state} updateState={updateState} close={() => setDrawer(false)} />}</div>;
 }
 
 function Splash() {
