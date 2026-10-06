@@ -451,7 +451,7 @@ function RegistrationFlow({ setState }: { setState: Dispatch<SetStateAction<AppS
   };
 
   return (
-    <main className="min-h-[100dvh] bg-white">
+    <main className="h-[100dvh] overflow-y-auto overscroll-y-contain bg-white">
       <div className="mx-auto min-h-[100dvh] w-full max-w-[461px]">
         <EnrollmentHeader step={step} onBack={back} />
         <div className="px-5 pb-2 pt-1">
