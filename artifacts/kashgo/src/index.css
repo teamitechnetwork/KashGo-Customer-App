@@ -62,6 +62,12 @@ body {
   font-family: var(--app-font-sans);
   -webkit-font-smoothing: antialiased;
 }
+.app-shell {
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  overflow-x: hidden;
+}
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 .font-mono { font-family: var(--app-font-mono); }
