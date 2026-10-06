@@ -121,7 +121,6 @@ export function AccountMenuContent({ state, updateState, onLogout }: FeatureProp
       <MenuRow label="Verify your email" badge={state.emailVerified ? 'Verified' : 'Not verified'} onClick={() => setLocation('/verify-email')} />
       <MenuRow label="Account Verification" badge={state.identityVerified ? 'Verified' : 'Not verified'} onClick={() => setLocation('/account-verification')} />
       <MenuRow label="Change Password" onClick={() => setLocation('/change-password')} />
-      <MenuRow label="Wallet balances" onClick={() => setLocation('/wallet-balances')} />
       <SectionTitle>Transactions</SectionTitle>
       <MenuRow label="Transaction Limits" onClick={() => setLocation('/transaction-limits')} />
       <MenuRow label="Linked Accounts" onClick={() => setLocation('/linked-accounts')} />
